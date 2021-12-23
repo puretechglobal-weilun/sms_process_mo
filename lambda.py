@@ -135,7 +135,7 @@ def handler(event,context):
                 
     insert_log = getattr(function_class, "insert_log")(request_json, internal_debug)
     s3 = boto3.resource("s3")
-    object = s3.Object("request-test-bucket", "mo/"+global_date+"/"+unique_id+".json")
+    object = s3.Object("request-test-bucket", "mo/"+request_json["gateway"]+"/"+request_json["country"]+"/"+global_date+"/"+unique_id+".json")
     object.put(Body=str(insert_log))
     print("Check debug using: "+unique_id)
     # print(f'{internal_debug}')

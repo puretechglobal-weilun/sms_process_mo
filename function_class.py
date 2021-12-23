@@ -11,7 +11,7 @@ sqs = boto3.resource("sqs")
 def invoke_function(params):
     gateway = params["gateway"]
     response = lambda_client.invoke(
-        FunctionName =  "arn:aws:lambda:us-east-1:344055016255:function:"+gateway+"_class",
+        FunctionName =  "arn:aws:lambda:us-east-1:344055016255:function:"+'sms_'+gateway,
         InvocationType = "RequestResponse",
         Payload = json.dumps(params)
     )
@@ -53,7 +53,7 @@ def search_subscriber(rid, search_by = "stop"):
     stop_rid = country+"_"+gateway+"_"+operator+"_"+shortcode+"_"+keyword+"_"+msisdn
     stop_all_rid = country+"_"+gateway+"_"+operator+"_"+shortcode
     rid = stop_all_rid if search_by == "stopall" else stop_rid
-    table = dynamodb.Table(gateway+"_subscriber")
+    table = dynamodb.Table("subscriber_"+gateway)
     response = table.query(
         IndexName="msisdn-rid-index",
         KeyConditionExpression= Key("msisdn").eq(msisdn) & Key("rid").begins_with(rid)
@@ -72,7 +72,7 @@ def insert_subscriber(function_json):
     dynamoDB_status = ""
     rid = function_json["country"]+"_"+function_json["gateway"]+"_"+function_json["operator"]+"_"+function_json["shortcode"]+"_"+function_json["keyword"]+"_"+function_json["msisdn"]+"_"+function_json["mo_id"]+"_subscriber"
     function_json["rid"] = rid
-    table = dynamodb.Table(function_json["gateway"]+"_subscriber")
+    table = dynamodb.Table("subscriber_"+function_json["gateway"])
     dynamoDB_status = table.put_item(Item=function_json)
     dynamoDB_status = dynamoDB_status["ResponseMetadata"]["HTTPStatusCode"]
     
@@ -92,7 +92,7 @@ def unsub_subscriber(function_json):
     rid = function_json["rid"]
     subscribe_time = function_json["subscribe_time"]
     unsubscribe_time = function_json["unsubscribe_time"]
-    table = dynamodb.Table(function_json["gateway"]+"_subscriber")
+    table = dynamodb.Table("subscriber_"+function_json["gateway"])
     dynamoDB_status = table.update_item(
         Key={
             "rid": str(rid),
