@@ -35,12 +35,12 @@ def search_keyword(country,gateway,operator,shortcode,keyword):
         }
     )
     if "Item" in response:
-        return json.dumps(response["Item"])
+        return response["Item"]
     else:
-        return json.dumps({
+        return {
             "product"    :   "product not found",
             "code"       :   "M202"
-        })
+        }
 
 def search_subscriber(rid, search_by = "stop"):
     rid_list    = rid.split("_")
@@ -77,7 +77,7 @@ def insert_subscriber(function_json):
     dynamoDB_status = dynamoDB_status["ResponseMetadata"]["HTTPStatusCode"]
     
     if dynamoDB_status == 200:
-        return json.dumps(function_json)
+        return function_json
     else:
         return "DynamoDB got problem"
 
@@ -85,7 +85,7 @@ def insert_cps(function_json):
     message_body =  json.dumps(function_json)
     queue = sqs.get_queue_by_name(QueueName="cps")
     response = queue.send_message(MessageBody=message_body)
-    return json.dumps(response)
+    return response
 
 def unsub_subscriber(function_json):
     dynamoDB_status = ""
@@ -106,7 +106,7 @@ def unsub_subscriber(function_json):
     )
     dynamoDB_status = dynamoDB_status["ResponseMetadata"]["HTTPStatusCode"]
     if dynamoDB_status == 200:
-        return "Unsub done: ", rid, subscribe_time, dynamoDB_status
+        return "Unsub done: "+rid
     else:
         return "DynamoDB got problem"
         

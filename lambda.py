@@ -7,7 +7,7 @@ def handler(event,context):
 
     function_class = __import__("function_class")
     internal_status = 200
-    internal_debug = ""
+    internal_debug = {}
     request_json = {}
     global_datetime = getattr(function_class, "UTC0_datetime")()
     global_date = getattr(function_class, "UTC0_date")()
@@ -27,15 +27,13 @@ def handler(event,context):
         request_json["function"] = "insert_mo"
         request_json["global_datetime"] = global_datetime
         mo_var = getattr(function_class, "invoke_function")(request_json)
-        internal_debug += list(mo_var)[0] + ": " + list(mo_var.values())[0]+"\n"
-        
-        mo_var = json.loads(list(mo_var.values())[0])
+        internal_debug['insert_mo'] = mo_var
+        mo_var = list(mo_var.values())[0]
         if mo_var["mo_type"] == "stopall" or mo_var["mo_type"] == "unsub all":
             pass
         else:
-            keyword_detail = json.loads(getattr(function_class, "search_keyword")(request_json["country"], request_json["gateway"], request_json["operator"], request_json["shortcode"], request_json["keyword"]))
-            internal_debug += "keyword detail: " + str(keyword_detail)+"\n"
-            
+            keyword_detail = getattr(function_class, "search_keyword")(request_json["country"], request_json["gateway"], request_json["operator"], request_json["shortcode"], request_json["keyword"])
+            internal_debug['keyword_detail'] = keyword_detail = keyword_detail
             if keyword_detail["product"] == "product not found":
                 internal_status = keyword_detail["code"]
             else:
@@ -61,84 +59,83 @@ def handler(event,context):
                 }
                 request_json["function"] = "process_subscriber_add_data"
                 subscriber_add_data = getattr(function_class, "invoke_function")(request_json)
-                internal_debug += list(subscriber_add_data)[0] + ": " + list(subscriber_add_data.values())[0]+"\n"
-                subscriber_add_data = json.loads(list(subscriber_add_data.values())[0])
+                internal_debug['process_subscriber_add_data'] = subscriber_add_data
+                subscriber_add_data = list(subscriber_add_data.values())[0]
                 
                 for key, value in subscriber_add_data.items():
                     subscriber_data[key] = str(value)
                     
-                insert_subscriber_result = json.loads(getattr(function_class, "insert_subscriber")(subscriber_data))
-                internal_debug += "subscriber detail: " + str(insert_subscriber_result)+"\n"
+                insert_subscriber_result = getattr(function_class, "insert_subscriber")(subscriber_data)
+                internal_debug['insert_subscriber'] = insert_subscriber_result
                 
                 if keyword_detail["investor_campaign"] == "880000":
-                    insert_cps_result = json.loads(getattr(function_class, "insert_cps")(mo_var))
-                    internal_debug += "CPS detail: " + str(insert_cps_result)+"\n"            
+                    insert_cps_result = getattr(function_class, "insert_cps")(mo_var)
+                    internal_debug['insert_cps'] = insert_cps_result           
 
                 request_json["subscriber_id"]  = insert_subscriber_result["rid"]
                 request_json["function"]       = "process_send_sms"
                 request_json["message_key"]    = message_key
                 request_json["new_subscriber"] = new_subscriber
                 send_sms_result = getattr(function_class, "invoke_function")(request_json)
-                internal_debug += list(send_sms_result)[0] + ": " + list(send_sms_result.values())[0]+"\n"
+                internal_debug['process_send_sms'] = send_sms_result
                 
                 request_json["function"]       = "process_send_content"
                 send_content_result = getattr(function_class, "invoke_function")(request_json)
-                internal_debug += list(send_content_result)[0] + ": " + list(send_content_result.values())[0]+"\n"
+                internal_debug['process_send_content'] = send_content_result
                 
             elif mo_var["mo_type"] == "stop" or mo_var["mo_type"] == "unsub":
                 message_key = "quit_message"
                 list_subscriber = getattr(function_class, "search_subscriber")(mo_var["subscriber_id"])
                 if list_subscriber:
-                    internal_debug += str(list_subscriber)+"\n"
+                    internal_debug['search_subscriber'] = list_subscriber
                     for per_subscriber in list_subscriber:
                         per_subscriber["unsubscribe_time"] = global_datetime
                         unsub_subscriber = getattr(function_class, "unsub_subscriber")(per_subscriber)
-                        internal_debug += str(unsub_subscriber)+"\n"
+                        internal_debug['unsub_subscriber'] = unsub_subscriber
                         if per_subscriber["investor_campaign"] == "880000":
-                            insert_cps_result = json.loads(getattr(function_class, "insert_cps")(per_subscriber))
-                            internal_debug += "CPS detail: " + str(insert_cps_result)+"\n"  
+                            insert_cps_result = getattr(function_class, "insert_cps")(per_subscriber)
+                            internal_debug['insert_cps'] = insert_cps_result 
 
                 else:
                     internal_status = "M204"
-                    internal_debug += "subscriber no found\n"
+                    internal_debug['search_subscriber'] = "subscriber no found"
                     
                 request_json["function"]       = "process_send_sms"
                 request_json["message_key"]    = message_key
                 send_sms_result = getattr(function_class, "invoke_function")(request_json)
-                internal_debug += list(send_sms_result)[0] + ": " + list(send_sms_result.values())[0]+"\n"
+                internal_debug['process_send_sms'] = send_sms_result
                 
             elif mo_var["mo_type"] == "stopall" or mo_var["mo_type"] == "unsub all":
                 message_key = "stop_all_message"
                 list_subscriber = getattr(function_class, "search_subscriber")(mo_var["subscriber_id"], search_by = "stopall")
                 
                 if list_subscriber:
-                    internal_debug += str(list_subscriber)+"\n"
+                    internal_debug['search_subscriber'] = list_subscriber
                     for per_subscriber in list_subscriber:
                         per_subscriber["unsubscribe_time"] = global_datetime
                         unsub_subscriber = getattr(function_class, "unsub_subscriber")(per_subscriber)
-                        internal_debug += str(unsub_subscriber)+"\n"
+                        internal_debug['unsub_subscriber'] = unsub_subscriber
                         if per_subscriber["investor_campaign"] == "880000":
-                            insert_cps_result = json.loads(getattr(function_class, "insert_cps")(per_subscriber))
-                            internal_debug += "CPS detail: " + str(insert_cps_result)+"\n"
+                            insert_cps_result = getattr(function_class, "insert_cps")(per_subscriber)
+                            internal_debug['insert_cps'] = insert_cps_result 
                 else:
                     internal_status = "M204"
-                    internal_debug += "subscriber no found\n"
+                    internal_debug['search_subscriber'] = "subscriber no found"
                     message_key = "non_subscriber"
                     
                 request_json["function"]       = "process_send_sms"
                 request_json["message_key"]    = message_key
                 send_sms_result = getattr(function_class, "invoke_function")(request_json)
-                internal_debug += list(send_sms_result)[0] + ": " + list(send_sms_result.values())[0]+"\n"
+                internal_debug['process_send_sms'] = send_sms_result
             else:
                 internal_status = "M203"
-                internal_debug += "Unknown MO type"+"\n"
+                internal_debug['unknown_mo'] = "unknown mo type"
                 
     insert_log = getattr(function_class, "insert_log")(request_json, internal_debug)
     s3 = boto3.resource("s3")
     object = s3.Object("request-test-bucket", "mo/"+request_json["gateway"]+"/"+request_json["country"]+"/"+global_date+"/"+unique_id+".json")
     object.put(Body=str(insert_log))
-    print("Check debug using: "+unique_id)
-    # print(f'{internal_debug}')
+    print("check debug using: "+unique_id)
     return {
         "status"    :   internal_status,
         "code"      :   internal_debug
