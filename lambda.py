@@ -1,4 +1,4 @@
-# 700-800 ms
+# 700-810 ms
 import json
 import uuid
 import boto3
