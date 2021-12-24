@@ -62,7 +62,7 @@ def search_subscriber(rid, search_by = "stop"):
     if "Items" in response:
         list_subscriber = response["Items"]
         for key in list_subscriber:
-            if key["sub_status"] == "1":
+            if key["sub_status"] == "S101":
                 active_user.append(key)
         return active_user
     else:
@@ -100,7 +100,7 @@ def unsub_subscriber(function_json):
         },
         UpdateExpression="SET sub_status = :val1, unsubscribe_time = :val2",
         ExpressionAttributeValues={
-            ":val1": 0,
+            ":val1": "S102",
             ":val2": unsubscribe_time
         }
     )

@@ -54,7 +54,7 @@ def handler(event,context):
                     "mo_id"             : mo_var.get("mo_id", ""),
                     "subscribe_time"    : mo_var.get("date_time", ""),
                     "unsubscribe_time"  : "0000-00-00 00:00:00",
-                    "sub_status"        : "1",
+                    "sub_status"        : "S101",
                     "investor_campaign" : mo_var.get("investor_campaign", "")
                 }
                 request_json["function"] = "process_subscriber_add_data"
@@ -85,17 +85,20 @@ def handler(event,context):
                 
             elif mo_var["mo_type"] == "stop" or mo_var["mo_type"] == "unsub":
                 message_key = "quit_message"
+                unsub_array = []
+                cps_array = []
                 list_subscriber = getattr(function_class, "search_subscriber")(mo_var["subscriber_id"])
                 if list_subscriber:
                     internal_debug['search_subscriber'] = list_subscriber
                     for per_subscriber in list_subscriber:
                         per_subscriber["unsubscribe_time"] = global_datetime
                         unsub_subscriber = getattr(function_class, "unsub_subscriber")(per_subscriber)
-                        internal_debug['unsub_subscriber'] = unsub_subscriber
+                        unsub_array.append(unsub_subscriber) 
                         if per_subscriber["investor_campaign"] == "880000":
                             insert_cps_result = getattr(function_class, "insert_cps")(per_subscriber)
-                            internal_debug['insert_cps'] = insert_cps_result 
-
+                            cps_array.append(insert_cps_result) 
+                    internal_debug['insert_cps']        = cps_array 
+                    internal_debug['unsub_subscriber']  = unsub_array
                 else:
                     internal_status = "M204"
                     internal_debug['search_subscriber'] = "subscriber no found"
@@ -107,17 +110,20 @@ def handler(event,context):
                 
             elif mo_var["mo_type"] == "stopall" or mo_var["mo_type"] == "unsub all":
                 message_key = "stop_all_message"
+                unsub_array = []
+                cps_array = []
                 list_subscriber = getattr(function_class, "search_subscriber")(mo_var["subscriber_id"], search_by = "stopall")
-                
                 if list_subscriber:
                     internal_debug['search_subscriber'] = list_subscriber
                     for per_subscriber in list_subscriber:
                         per_subscriber["unsubscribe_time"] = global_datetime
                         unsub_subscriber = getattr(function_class, "unsub_subscriber")(per_subscriber)
-                        internal_debug['unsub_subscriber'] = unsub_subscriber
+                        unsub_array.append(unsub_subscriber) 
                         if per_subscriber["investor_campaign"] == "880000":
                             insert_cps_result = getattr(function_class, "insert_cps")(per_subscriber)
-                            internal_debug['insert_cps'] = insert_cps_result 
+                            cps_array.append(insert_cps_result) 
+                    internal_debug['insert_cps']        = cps_array 
+                    internal_debug['unsub_subscriber']  = unsub_array
                 else:
                     internal_status = "M204"
                     internal_debug['search_subscriber'] = "subscriber no found"
