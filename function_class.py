@@ -1,6 +1,6 @@
 import boto3
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from boto3.dynamodb.conditions import Key
 import uuid
 
@@ -41,6 +41,63 @@ def search_keyword(country,gateway,operator,shortcode,keyword):
             "product"    :   "product not found",
             "code"       :   "M202"
         }
+
+def search_sub_duplicate_filter(country,gateway,operator,shortcode,keyword,msisdn):
+    sub_dup_arr ={}
+    rid = country+"_"+gateway+"_"+operator+"_"+shortcode+"_"+keyword+"_"+msisdn
+    #check setting table
+    table = dynamodb.Table("mo_sub_duplicate_setting")
+    response = table.query(
+        KeyConditionExpression= Key("rid").eq(country + "_" + gateway) & Key("status").eq("m205")
+    )
+    #default level is keyword level, no period 
+    level = "keyword"
+    period = ""
+    if ("Items" in response) and (response["Count"] != 0):
+        sub_dup_arr = list(response["Items"])[0]
+        level = sub_dup_arr["level"]
+        period = sub_dup_arr["period"]
+    else:
+        sub_dup_arr["response"] = "Sub Duplicate record not found"
+
+    #get all subscriber with the same msisdn
+    table = dynamodb.Table("subscriber_"+gateway)
+    response = table.query(
+        IndexName="msisdn-rid-index",
+        KeyConditionExpression= Key("msisdn").eq(msisdn) & Key("rid").begins_with(rid)
+    )
+    #period got not read and put it as string
+    sub_dup_arr["period"] = str(period)
+    sub_dup_arr["filter"] = ""
+    if "Items" in response:
+        for item in response["Items"]:
+            if item["sub_status"] == "S101" and item["operator"] == operator and item["shortcode"] == shortcode and item["keyword"] == keyword and level == "keyword":
+                    sub_dup_arr["filter"] = "yes"
+            elif item["sub_status"] == "S101" and item["operator"] == operator and item["shortcode"] == shortcode and level == "shortcode":
+                timeline = check_period(item["subscribe_time"],period)
+                if timeline["within_period"] == True:
+                    sub_dup_arr["filter"] = "yes"
+            elif item["sub_status"] == "S101" and item["operator"] == operator and level == "operator":
+                #check if within the period 
+                timeline = check_period(item["subscribe_time"],period)
+                if timeline["within_period"] == True:
+                    sub_dup_arr["filter"] = "yes"
+                    
+    if sub_dup_arr["filter"] == "yes":
+        sub_dup_arr["response"] = "Sub Duplicate per " +level + " level, Last subsribe date : " + timeline["subscribe_time"].strftime("%Y-%m-%d %H:%M:%S") + " | Period : " + str(timeline["days"])
+    return sub_dup_arr
+
+def check_period(subscribe_time,period):
+    timeline = {}
+    #reformat sring to datetime
+    timeline["subscribe_time"] = datetime.strptime(subscribe_time, '%Y-%m-%d %H:%M:%S')
+    time_between_subscribe = datetime.now() - timeline["subscribe_time"]
+    timeline["days"] = time_between_subscribe.days
+    if timeline["days"] <= period:
+        timeline["within_period"] = True
+    else:
+        timeline["within_period"] = False
+    return timeline
 
 def search_subscriber(rid, search_by = "stop"):
     rid_list    = rid.split("_")
@@ -86,6 +143,12 @@ def insert_cps(function_json):
     queue = sqs.get_queue_by_name(QueueName="cps")
     response = queue.send_message(MessageBody=message_body)
     return response
+    
+def insert_pixel(function_json):
+    message_body =  json.dumps(function_json)
+    queue = sqs.get_queue_by_name(QueueName="pixel")
+    response = queue.send_message(MessageBody=message_body)
+    return response
 
 def unsub_subscriber(function_json):
     dynamoDB_status = ""
@@ -116,3 +179,17 @@ def insert_log(request_json, internal_debug):
     debug["internal_debug"] = internal_debug
     debug =  json.dumps(debug)
     return debug
+
+def search_cps_config(campaign):
+    table = dynamodb.Table("cps_campaign_config")
+    cps_config = {}
+    
+    #c503 = active campaign
+    response = table.query(
+        KeyConditionExpression=Key("rid").eq(str(campaign)) & Key("status").eq("c503")
+    )
+    if ("Items" in response) and (response["Count"] != 0):
+        cps_config = list(response["Items"])[0]
+    else:
+        cps_config["error"] = "CPS configuration record no found"
+    return cps_config
