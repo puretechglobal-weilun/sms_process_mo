@@ -52,7 +52,7 @@ def search_sub_duplicate_filter(country,gateway,operator,shortcode,keyword,msisd
     )
     #default level is keyword level, no period 
     level = "keyword"
-    period = ""
+    period = 0
     if ("Items" in response) and (response["Count"] != 0):
         sub_dup_arr = list(response["Items"])[0]
         level = sub_dup_arr["level"]
