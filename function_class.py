@@ -44,7 +44,6 @@ def search_keyword(country,gateway,operator,shortcode,keyword):
 
 def search_sub_duplicate_filter(country,gateway,operator,shortcode,keyword,msisdn):
     sub_dup_arr ={}
-    rid = country+"_"+gateway+"_"+operator+"_"+shortcode+"_"+keyword+"_"+msisdn
     #check setting table
     table = dynamodb.Table("mo_sub_duplicate_setting")
     response = table.query(
@@ -59,6 +58,13 @@ def search_sub_duplicate_filter(country,gateway,operator,shortcode,keyword,msisd
         period = 0 if not level == "keyword" else sub_dup_arr["period"]
     else:
         sub_dup_arr["response"] = "Sub Duplicate record not found"
+
+    if level == "operator":
+        rid = country+"_"+gateway+"_"+operator
+    elif level == "shortcode":
+        rid = country+"_"+gateway+"_"+operator+"_"+shortcode
+    else:
+        rid = country+"_"+gateway+"_"+operator+"_"+shortcode+"_"+keyword+"_"+msisdn
 
     #get all subscriber with the same msisdn
     table = dynamodb.Table("subscriber_"+gateway)
