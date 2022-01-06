@@ -55,7 +55,7 @@ def search_sub_duplicate_filter(country,gateway,operator,shortcode,keyword,msisd
     if ("Items" in response) and (response["Count"] != 0):
         sub_dup_arr = list(response["Items"])[0]
         level = sub_dup_arr["level"]
-        period = 0 if not level == "keyword" else sub_dup_arr["period"]
+        period = 0 if level == "keyword" else sub_dup_arr["period"]
     else:
         sub_dup_arr["response"] = "Sub Duplicate record not found"
 
